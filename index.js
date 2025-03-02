@@ -1,4 +1,4 @@
-const CARD_VERSION = "0.1.0-alpha";
+const CARD_VERSION = "0.2.0-alpha";
 
 class FixedBottomCard extends HTMLElement {
   // Called whenever the home assistant state changes
