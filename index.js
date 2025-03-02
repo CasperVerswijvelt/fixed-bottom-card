@@ -1,44 +1,40 @@
 const CARD_VERSION = "0.1.0-alpha";
 
 class FixedBottomCard extends HTMLElement {
-  // Whenever the state changes, a new `hass` object is set. Use this to
-  // update your content.
+  // Called whenever the home assistant state changes
   set hass(hass) {
-    // Initialize the content if it's not there yet.
     this._hass = hass;
     if (this.card) this.card.hass = hass;
   }
 
   async setConfig(config) {
+    // Config validation
     if (!typeof config.card === "object") {
       throw new Error("You need to define a card to wrap.");
-    }
-    if (!typeof config.padding === "number") {
-      throw new Error("You need to define a padding (px number).");
-    }
-    if (!typeof config["bottom-bar-height"] === "string") {
-      throw new Error(
-        "You need to define a bottom bar height (css property string)."
-      );
     }
     this.config = config;
 
     this.card = await this.createCard(this.config.card);
     this.placeholder = document.createElement("div");
 
+    const spacing = this.config.spacing || "16px";
+    const bottomBarHeight =
+      this.config["bottom-bar-height"] || "var(--footer-height)";
+    const filter =
+      this.config.filter || "drop-shadow(0 0 20px var(--view-background))";
+    const zIndex = this.config["z-index"] || "1";
+
     this.card.style.position = "fixed";
-    this.card.style.bottom = `calc(${this.config.padding}px + ${this.config["bottom-bar-height"]})`;
-    this.card.style.zIndex = "1";
-    this.card.style.filter = "drop-shadow(0 0 20px var(--view-background))";
+    this.card.style.bottom = `calc(${bottomBarHeight} + ${spacing})`;
+    this.card.style.zIndex = zIndex;
+    this.card.style.filter = filter;
 
     this.append(this.placeholder, this.card);
 
     // Observe actual card size (height) and update placeholder
     new ResizeObserver((entries) => {
       const entry = entries[0];
-      this.placeholder.style.height = `${
-        entry.contentRect.height + 2 * this.config.padding
-      }px`;
+      this.placeholder.style.height = `calc(${entry.contentRect.height}px + ${spacing})`;
     }).observe(this.card);
 
     // Observe placeholder size (width) and update card
@@ -53,7 +49,7 @@ class FixedBottomCard extends HTMLElement {
   async createCard(cardConfig) {
     const helpers = await window.loadCardHelpers();
     const element = helpers.createCardElement(cardConfig);
-    if (this._hass) element.hass = this.hass;
+    if (this._hass) element.hass = this._hass;
     return element;
   }
 }
@@ -64,7 +60,7 @@ window.customCards.push({
   name: "Fixed Bottom Card",
   description: "Fixes a card to the bottom of the screen",
   preview: false,
-  documentationURL: "https://github.com/todo",
+  documentationURL: "https://github.com/ofekashery/vertical-stack-in-card",
 });
 
 console.info(
