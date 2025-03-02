@@ -7,6 +7,10 @@ class FixedBottomCard extends HTMLElement {
     if (this.card) this.card.hass = hass;
   }
 
+  set editMode(editMode) {
+    this.classList.toggle("edit-mode", editMode);
+  }
+
   async setConfig(config) {
     // Config validation
     if (!typeof config.card === "object") {
@@ -15,7 +19,26 @@ class FixedBottomCard extends HTMLElement {
     this.config = config;
 
     this.card = await this.createCard(this.config.card);
+    this.card.id = "card";
     this.placeholder = document.createElement("div");
+    this.placeholder.id = "placeholder";
+
+    const style = document.createElement("style");
+    style.textContent = `
+        .edit-mode > #placeholder {
+            display: none;
+        }
+        :not(.edit-mode) > #placeholder {
+            height: var(--fbc-height);
+        }
+        :not(.edit-mode) > #card {
+            position: fixed;
+            width: var(--fbc-width);
+            bottom: var(--fbc-bottom);
+            z-index: var(--fbc-z-index);
+            filter: var(--fbc-filter);
+        }
+    `;
 
     const spacing = this.config.spacing || "16px";
     const bottomBarHeight =
@@ -24,17 +47,22 @@ class FixedBottomCard extends HTMLElement {
       this.config.filter || "drop-shadow(0 0 20px var(--view-background))";
     const zIndex = this.config["z-index"] || "1";
 
-    this.card.style.position = "fixed";
-    this.card.style.bottom = `calc(${bottomBarHeight} + ${spacing})`;
-    this.card.style.zIndex = zIndex;
-    this.card.style.filter = filter;
+    this.style.setProperty(
+      "--fbc-bottom",
+      `calc(${bottomBarHeight} + ${spacing})`
+    );
+    this.style.setProperty("--fbc-z-index", zIndex);
+    this.style.setProperty("--fbc-filter", filter);
 
-    this.append(this.placeholder, this.card);
+    this.append(this.placeholder, this.card, style);
 
     // Observe actual card size (height) and update placeholder
     new ResizeObserver((entries) => {
       const entry = entries[0];
-      this.placeholder.style.height = `calc(${entry.contentRect.height}px + ${spacing})`;
+      this.style.setProperty(
+        "--fbc-height",
+        `calc(${entry.contentRect.height}px + ${spacing})`
+      );
     }).observe(this.card);
 
     // Observe placeholder size (width) and update card
@@ -42,7 +70,7 @@ class FixedBottomCard extends HTMLElement {
     //  due to the fixed positioning
     new ResizeObserver((entries) => {
       const entry = entries[0];
-      this.card.style.width = `${entry.contentRect.width}px`;
+      this.style.setProperty("--fbc-width", `${entry.contentRect.width}px`);
     }).observe(this.placeholder);
   }
 
